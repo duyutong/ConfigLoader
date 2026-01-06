@@ -1,0 +1,7 @@
+{
+  "excelPath": "D:\\Study\\ConfigLoader\\Assets/ConfigData/ExcelData",
+  "jsonPath": "D:\\Study\\ConfigLoader\\Assets/ConfigData/JsonData",
+  "binaryPath": "D:\\Study\\ConfigLoader\\Assets/ConfigData/BinaryData",
+  "csharpPath": "D:\\Study\\ConfigLoader\\Assets/ConfigData/CSharpClass",
+  "loaderPath": "D:\\Study\\ConfigLoader\\Assets/ConfigData/ConfigLoader.cs"
+}

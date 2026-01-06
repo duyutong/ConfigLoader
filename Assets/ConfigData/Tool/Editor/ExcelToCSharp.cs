@@ -1,5 +1,5 @@
 ﻿using Excel;
-using LitJson;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -283,16 +283,6 @@ public class ExcelToCSharp : EditorWindow
         DirectoryInfo directoryInfo = new DirectoryInfo(csharpPath);
         FileInfo[] files = directoryInfo.GetFiles();
         string _loaderClassStr = CSTemplate.loaderClassStr_PB;
-        string _loaderMember = CSTemplate.loaderMember_PB;
-        string _member = "";
-        _loaderClassStr = _loaderClassStr.Replace("#LibraryPath#", LibraryPath);
-        foreach (FileInfo fileInfo in files)
-        {
-            if (!fileInfo.Name.EndsWith(".cs")) continue;
-            string fileName = fileInfo.Name.Replace(".cs", "");
-            _member += _loaderMember.Replace("#ClassName#", fileName);
-        }
-        _loaderClassStr = _loaderClassStr.Replace("#LoaderMember#", _member);
         //写入文件
         string csSavePath = loaderPath;
         if (File.Exists(csSavePath)) File.Delete(csSavePath);
@@ -371,7 +361,7 @@ public class ExcelToCSharp : EditorWindow
                     table.Add(row);
                 }
                 //生成Json字符串
-                string json = JsonUtility.ToJson(table);
+                string json = JsonConvert.SerializeObject(table);
                 //写入文件
                 string jsonSavePath = jsonPath + "/" + fileInfo.Name.Replace(".xlsx", ".json");
                 FileInfo saveInfo = new FileInfo(jsonSavePath);
@@ -392,7 +382,8 @@ public class ExcelToCSharp : EditorWindow
     private static void InitPathLibrary()
     {
         if (!File.Exists(LibraryPath)) { ShowInitWindow(); return; }
-        pathLibrary = JsonMapper.ToObject<PathLibrary>(File.ReadAllText(LibraryPath));
+        string json = File.ReadAllText(LibraryPath);
+        pathLibrary = JsonConvert.DeserializeObject<PathLibrary>(json);
 
         excelPath = pathLibrary.excelPath;
         jsonPath = pathLibrary.jsonPath;
@@ -416,16 +407,7 @@ public class ExcelToCSharp : EditorWindow
         DirectoryInfo directoryInfo = new DirectoryInfo(csharpPath);
         FileInfo[] files = directoryInfo.GetFiles();
         string _loaderClassStr = CSTemplate.loaderClassStr_Json;
-        string _loaderMember = CSTemplate.loaderMember_Json;
-        string _member = "";
-        _loaderClassStr = _loaderClassStr.Replace("#LibraryPath#", LibraryPath);
-        foreach (FileInfo fileInfo in files)
-        {
-            if (!fileInfo.Name.EndsWith(".cs")) continue;
-            string fileName = fileInfo.Name.Replace(".cs", "");
-            _member += _loaderMember.Replace("#ClassName#", fileName);
-        }
-        _loaderClassStr = _loaderClassStr.Replace("#LoaderMember#", _member);
+
         //写入文件
         string csSavePath = loaderPath;
         if (File.Exists(csSavePath)) File.Delete(csSavePath);

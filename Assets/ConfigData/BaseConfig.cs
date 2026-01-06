@@ -5,7 +5,7 @@ using System.Collections.Generic;
 /// 配置表基类
 /// </summary>
 [Serializable]
-public class BaseConfig: global::ProtoBuf.IExtensible
+public abstract class BaseConfig: global::ProtoBuf.IExtensible
 {
     /// <summary>
     /// 编号
@@ -13,7 +13,7 @@ public class BaseConfig: global::ProtoBuf.IExtensible
     public int id;
 
     public BaseConfig() { }
-    public BaseConfig(Dictionary<string, object> _dataDic) { }
+    public abstract void Initialize(Dictionary<string, object> _dataDic);
 
     private global::ProtoBuf.IExtension __pbn__extensionData;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createlfMissing)
