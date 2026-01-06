@@ -1,16 +1,14 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
+﻿using Excel;
 using LitJson;
-using System.IO;
-using System.Text;
-using Excel;
-using System.Data;
-using Newtonsoft.Json;
-using System.Runtime.Serialization.Formatters.Binary;
 using System;
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
+using UnityEditor;
+using UnityEngine;
 
 /// <summary>
 /// 导表工具
@@ -22,7 +20,7 @@ public class ExcelToCSharp : EditorWindow
     public static string binaryPath;
     public static string csharpPath;
     public static string loaderPath;
-    private static string libraryPath = Application.dataPath + "/ConfigData/PathLibrary.json";
+    public static string LibraryPath { get; } = Application.dataPath + "/ConfigData/PathLibrary.json";
     private static Dictionary<string, Dictionary<string, string>> proTypeDic = new Dictionary<string, Dictionary<string, string>>();
     private static Dictionary<string, Dictionary<string, string>> proDesDic = new Dictionary<string, Dictionary<string, string>>();
     private static PathLibrary pathLibrary = null;
@@ -111,13 +109,15 @@ public class ExcelToCSharp : EditorWindow
             fileStream.Write(decBytes, 0, decBytes.Length);
             fileStream.Flush();
             fileStream.Close();
+
+            AssetDatabase.Refresh();
             Debug.Log("配置表类生成完毕 " + className);
         }
     }
     [MenuItem("Tools/Excel/Binary/ExcelToCsharp")]
     private static void ExcelToCsharp_PB()
     {
-        if (!File.Exists(libraryPath)) { ShowInitWindow(); return; }
+        if (!File.Exists(LibraryPath)) { ShowInitWindow(); return; }
         if (pathLibrary == null) InitPathLibrary();
 
         SetProDic();
@@ -173,6 +173,8 @@ public class ExcelToCSharp : EditorWindow
             fileStream.Write(decBytes, 0, decBytes.Length);
             fileStream.Flush();
             fileStream.Close();
+
+            AssetDatabase.Refresh();
             Debug.Log("配置表类生成完毕 " + className);
         }
     }
@@ -188,7 +190,7 @@ public class ExcelToCSharp : EditorWindow
     [MenuItem("Tools/Excel/Binary/CsharpToBinary")]
     private static void CsharpToBinary()
     {
-        if (!File.Exists(libraryPath)) { ShowInitWindow(); return; }
+        if (!File.Exists(LibraryPath)) { ShowInitWindow(); return; }
         if (pathLibrary == null) InitPathLibrary();
 
         MemoryStream tempStream = new MemoryStream(1024);
@@ -269,6 +271,8 @@ public class ExcelToCSharp : EditorWindow
     [MenuItem("Tools/Excel/Binary/RefreshAll")]
     private static void RefreshAllByPB()
     {
+        //生成CSharp脚本
+        ExcelToCsharp_PB();
         //生成二进制脚本
         CsharpToBinary();
         //生成loader工具类
@@ -281,7 +285,7 @@ public class ExcelToCSharp : EditorWindow
         string _loaderClassStr = CSTemplate.loaderClassStr_PB;
         string _loaderMember = CSTemplate.loaderMember_PB;
         string _member = "";
-        _loaderClassStr = _loaderClassStr.Replace("#libraryPath#", libraryPath);
+        _loaderClassStr = _loaderClassStr.Replace("#LibraryPath#", LibraryPath);
         foreach (FileInfo fileInfo in files)
         {
             if (!fileInfo.Name.EndsWith(".cs")) continue;
@@ -305,7 +309,7 @@ public class ExcelToCSharp : EditorWindow
     [MenuItem("Tools/Excel/Json/ExcelToCsharp")]
     private static void ExcelToCsharp_Json()
     {
-        if (!File.Exists(libraryPath)) { ShowInitWindow(); return; }
+        if (!File.Exists(LibraryPath)) { ShowInitWindow(); return; }
         if (pathLibrary == null) InitPathLibrary();
 
         SetProDic();
@@ -314,9 +318,10 @@ public class ExcelToCSharp : EditorWindow
     [MenuItem("Tools/Excel/Json/ExcelToJson")]
     private static void ExcelToJson()
     {
-        if (!File.Exists(libraryPath)) { ShowInitWindow(); return; }
+        if (!File.Exists(LibraryPath)) { ShowInitWindow(); return; }
         if (pathLibrary == null) InitPathLibrary();
         if (File.Exists(jsonPath)) File.Delete(jsonPath);
+
         DirectoryInfo directoryInfo = new DirectoryInfo(excelPath);
         FileInfo[] files = directoryInfo.GetFiles();
         proTypeDic.Clear();
@@ -366,7 +371,7 @@ public class ExcelToCSharp : EditorWindow
                     table.Add(row);
                 }
                 //生成Json字符串
-                string json = JsonConvert.SerializeObject(table, Formatting.Indented);
+                string json = JsonUtility.ToJson(table);
                 //写入文件
                 string jsonSavePath = jsonPath + "/" + fileInfo.Name.Replace(".xlsx", ".json");
                 FileInfo saveInfo = new FileInfo(jsonSavePath);
@@ -386,8 +391,8 @@ public class ExcelToCSharp : EditorWindow
 
     private static void InitPathLibrary()
     {
-        if (!File.Exists(libraryPath)) { ShowInitWindow(); return; }
-        pathLibrary = JsonMapper.ToObject<PathLibrary>(File.ReadAllText(libraryPath));
+        if (!File.Exists(LibraryPath)) { ShowInitWindow(); return; }
+        pathLibrary = JsonMapper.ToObject<PathLibrary>(File.ReadAllText(LibraryPath));
 
         excelPath = pathLibrary.excelPath;
         jsonPath = pathLibrary.jsonPath;
@@ -401,7 +406,7 @@ public class ExcelToCSharp : EditorWindow
     {
         ExcelToJson();
 
-        //生成json脚本
+        //生成CSharp脚本
         ToCSharp_Json();
         //生成loader工具类
         CreatLoader_Json();
@@ -413,7 +418,7 @@ public class ExcelToCSharp : EditorWindow
         string _loaderClassStr = CSTemplate.loaderClassStr_Json;
         string _loaderMember = CSTemplate.loaderMember_Json;
         string _member = "";
-        _loaderClassStr = _loaderClassStr.Replace("#libraryPath#", libraryPath);
+        _loaderClassStr = _loaderClassStr.Replace("#LibraryPath#", LibraryPath);
         foreach (FileInfo fileInfo in files)
         {
             if (!fileInfo.Name.EndsWith(".cs")) continue;
@@ -437,7 +442,7 @@ public class ExcelToCSharp : EditorWindow
     [MenuItem("Tools/Excel/InitPath")]
     private static void ShowInitWindow()
     {
-        if (pathLibrary == null && File.Exists(libraryPath)) InitPathLibrary();
+        if (pathLibrary == null && File.Exists(LibraryPath)) InitPathLibrary();
         Rect wr = new Rect(0, 0, 600, 150);
         ExcelToCSharp window = (ExcelToCSharp)GetWindowWithRect(typeof(ExcelToCSharp), wr, true, "InitPath");
         window.Show();
@@ -445,8 +450,8 @@ public class ExcelToCSharp : EditorWindow
     private void OnGUI()
     {
         excelPath = EditorGUILayout.TextField("excelPath/配置表地址:", excelPath);
-        jsonPath = EditorGUILayout.TextField("jsonPath/json文件地址:", jsonPath);
-        binaryPath = EditorGUILayout.TextField("binaryPath/二进制文件地址:", binaryPath);
+        jsonPath = EditorGUILayout.TextField("JsonPath/json文件地址:", jsonPath);
+        binaryPath = EditorGUILayout.TextField("BinaryPath/二进制文件地址:", binaryPath);
         csharpPath = EditorGUILayout.TextField("csharpPath/配置表类:", csharpPath);
         loaderPath = EditorGUILayout.TextField("loaderPath/加载工具:", loaderPath);
         if (GUILayout.Button("保存并关闭窗口", GUILayout.Width(200)))
@@ -454,13 +459,13 @@ public class ExcelToCSharp : EditorWindow
             Dictionary<string, string> table = new Dictionary<string, string>()
             {
                 ["excelPath"] = excelPath,
-                ["jsonPath"] = jsonPath,
-                ["binaryPath"] = binaryPath,
+                ["JsonPath"] = jsonPath,
+                ["BinaryPath"] = binaryPath,
                 ["csharpPath"] = csharpPath,
                 ["loaderPath"] = loaderPath,
             };
-            string json = JsonConvert.SerializeObject(table, Formatting.Indented);
-            string jsonSavePath = libraryPath;
+            string json = JsonUtility.ToJson(table);
+            string jsonSavePath = LibraryPath;
             if (File.Exists(jsonSavePath)) File.Delete(jsonSavePath);
             FileInfo saveInfo = new FileInfo(jsonSavePath);
             DirectoryInfo dir = saveInfo.Directory;

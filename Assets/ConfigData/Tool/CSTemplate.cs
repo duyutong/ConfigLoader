@@ -76,18 +76,21 @@ public class #ClassName#:BaseConfig
     public const string loaderClassStr_PB =
 @"
 using LitJson;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 public class ConfigLoader 
 {
-    public static string binaryPath
+    #region AutoContext
+    public static string BinaryPath
     {
         get
         {
             if (_binaryPath == null)
             {
-                string pathLibStr = File.ReadAllText(""#libraryPath#"");
+                string pathLibStr = File.ReadAllText(ExcelToCSharp.LibraryPath);
                 PathLibrary pathLibrary = JsonMapper.ToObject<PathLibrary>(pathLibStr);
                 _binaryPath = pathLibrary.binaryPath;
             }
@@ -108,6 +111,8 @@ public class ConfigLoader
 
         return memoryStream;
     }
+    #endregion
+
     #LoaderMember#
 }
 ";
@@ -117,17 +122,22 @@ public class ConfigLoader
     public const string loaderMember_PB =
 @"
     #region #ClassName#
-    private static Dictionary<int, #ClassName#> config#ClassName#Table = new Dictionary<int, #ClassName#>();
+    private static Dictionary<int, #ClassName#> config#ClassName#Table;
     public static #ClassName# Get#ClassName#Config(int _id)
     {
-        if (config#ClassName#Table.Count == 0) config#ClassName#Table = Load#ClassName#Config();
+        if (config#ClassName#Table == null) config#ClassName#Table = Load#ClassName#Config();
         if (!config#ClassName#Table.ContainsKey(_id)) return null;
         return config#ClassName#Table[_id];
+    }
+    public static List<#ClassName#> Get#ClassName#Config(Func<#ClassName#, bool> select,int count = 1) 
+    {
+        if (config#ClassName#Table == null) config#ClassName#Table = Load#ClassName#Config();
+        return config#ClassName#Table.Values.Where(v => select(v)).Take(count).ToList();
     }
     private static Dictionary<int, #ClassName#> Load#ClassName#Config() 
     {
         Dictionary<int, #ClassName#> result = new Dictionary<int, #ClassName#>();
-        string filePath = Path.Combine(binaryPath, ""#ClassName#.bytes"");
+        string filePath = Path.Combine(BinaryPath, ""#ClassName#.bytes"");
         tempStream = LoadFileAsMemoryStream(filePath);
 
         tempStream.Position = 0;
@@ -148,20 +158,31 @@ public class ConfigLoader
     /// </summary>
     public const string loaderClassStr_Json =
 @"
+using LitJson;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using LitJson;
+using System.Linq;
 public class ConfigLoader
 {
-    public static string jsonPath  
+    #region AutoContext
+    public static string JsonPath  
     {
         get 
         {
-            string pathLibStr = File.ReadAllText(""#libraryPath#"");
-            PathLibrary pathLibrary = JsonMapper.ToObject<PathLibrary>(pathLibStr);
-            return pathLibrary.jsonPath;
+            if (string.IsNullOrEmpty(_jsonPath)) 
+            {
+                string pathLibStr = File.ReadAllText(ExcelToCSharp.LibraryPath);
+                PathLibrary pathLibrary = JsonMapper.ToObject<PathLibrary>(pathLibStr);
+                _jsonPath = pathLibrary.jsonPath;
+            }
+
+            return _jsonPath;
         }
     }
+    private static string _jsonPath;
+    #endregion
+
     #LoaderMember#
 }";
     /// <summary>
@@ -177,10 +198,15 @@ public class ConfigLoader
         if (!config#ClassName#Table.ContainsKey(_id)) return null;
         return config#ClassName#Table[_id];
     }
+    public static List<#ClassName#> Get#ClassName#Config(Func<#ClassName#, bool> select,int count = 1) 
+    {
+        if (config#ClassName#Table == null) config#ClassName#Table = Load#ClassName#Config();
+        return config#ClassName#Table.Values.Where(v => select(v)).Take(count).ToList();
+    }
     private static Dictionary<int, #ClassName#> Load#ClassName#Config()
     {
         Dictionary<int, #ClassName#> result = new Dictionary<int, #ClassName#>();
-        JsonData _data = JsonMapper.ToObject(File.ReadAllText(jsonPath + ""/#ClassName#.json""));
+        JsonData _data = JsonMapper.ToObject(File.ReadAllText(JsonPath + ""/#ClassName#.json""));
         for (int i = 0; i<_data.Count; i++)
         {
             int index = i;
