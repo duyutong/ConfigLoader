@@ -30,7 +30,7 @@ public class ConfigDataBinary<T> : IConfigDataHandler<T> where T : BaseConfig
         List<T> table = ProtoBuf.Serializer.Deserialize<List<T>>(tempStream);
         foreach (T item in table)
         {
-            item.id = GetIdOrDefault(item);
+            item.id = GetIdOrDefault(item,table.IndexOf(item));
             int key = item.id;
             result[key] = item;
         }
@@ -47,35 +47,20 @@ public class ConfigDataBinary<T> : IConfigDataHandler<T> where T : BaseConfig
 
         return memoryStream;
     }
-    private int GetIdOrDefault(object obj)
+    private int GetIdOrDefault(object obj,int defaultIndex)
     {
-        if (obj == null)
-            return -1;
+        if (obj == null) return defaultIndex;
 
         Type type = obj.GetType();
 
-        // 优先找属性：Id / ID / id
-        var prop =
-            type.GetProperty("Id") ??
-            type.GetProperty("ID") ??
-            type.GetProperty("id");
+        // 优先找属性：Id / ID 
+        var prop = type.GetProperty("Id") ?? type.GetProperty("ID");
+        if (prop != null && prop.PropertyType == typeof(int)) return (int)prop.GetValue(obj);
 
-        if (prop != null && prop.PropertyType == typeof(int))
-        {
-            return (int)prop.GetValue(obj);
-        }
+        // 再找字段：Id / ID
+        var field = type.GetField("Id") ?? type.GetField("ID");
+        if (field != null && field.FieldType == typeof(int)) return (int)field.GetValue(obj);
 
-        // 再找字段：Id / ID / id
-        var field =
-            type.GetField("Id") ??
-            type.GetField("ID") ??
-            type.GetField("id");
-
-        if (field != null && field.FieldType == typeof(int))
-        {
-            return (int)field.GetValue(obj);
-        }
-
-        return -1;
+        return defaultIndex;
     }
 }
